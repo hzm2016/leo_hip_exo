@@ -156,10 +156,10 @@ while(AntConnected):
             R_Cmd_sat = saturate(R_Cmd, max_cmd)    
                 
             if(L_Cmd>pk or R_Cmd>pk):
-                if(R_Cmd>L_Cmd):
-                    pk=R_Cmd
-                if(L_Cmd>R_Cmd):
-                    pk=L_Cmd 
+                if(R_Cmd>L_Cmd):  
+                    pk=R_Cmd  
+                if(L_Cmd>R_Cmd):  
+                    pk=L_Cmd   
             
             # send torque cmd  
             # SendCmdTorque(L_Cmd_sat, R_Cmd_sat)    
