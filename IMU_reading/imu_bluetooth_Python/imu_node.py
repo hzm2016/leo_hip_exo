@@ -107,8 +107,8 @@ class AnyDevice(gatt.Device):
                 self.parse_imu(value)
 
             if self.sock_pc is not None:
-                print("send blue source data")
-                self.sock_pc.sendall(value)
+                print("send blue source data") 
+                self.sock_pc.sendall(value) 
                 
     #这个是在本地解析
     def parse_imu(self,buf):
@@ -124,8 +124,8 @@ class AnyDevice(gatt.Device):
         imu_dat = array('f',[0.0 for i in range(0,34)])
 
         if buf[0] == 0x11:
-            ctl = (buf[2] << 8) | buf[1]
-            print(" subscribe tag: 0x%04x"%ctl)
+            ctl = (buf[2] << 8) | buf[1]  
+            print(" subscribe tag: 0x%04x"%ctl)  
             print(" ms: ", ((buf[6]<<24) | (buf[5]<<16) | (buf[4]<<8) | (buf[3]<<0)))
 
             L =7 # 从第7字节开始根据 订阅标识tag来解析剩下的数据
@@ -324,13 +324,13 @@ if host is not None:
         sys.exit(0)
 
 
-print("Connecting bluetooth ...")
+print("Connecting bluetooth ...")  
 
-manager = gatt.DeviceManager(adapter_name='hci0')
-device = AnyDevice(manager=manager, mac_address=args.mac_address)
-device.sock_pc = sock
-if host is None:
-    device.parse_imu_flage = True
+manager = gatt.DeviceManager(adapter_name='hci0')  
+device = AnyDevice(manager=manager, mac_address=args.mac_address)  
+device.sock_pc = sock  
+if host is None:  
+    device.parse_imu_flage = True  
 
 device.connect()
 

@@ -192,5 +192,6 @@ def main():
     dnn = DNN(18,128,64,2)
     print([dnn.fc1_weight.shape, dnn.fc2_weight.shape, dnn.fc3_weight.shape, dnn.fc1_bias.shape, dnn.fc2_bias.shape, dnn.fc3_bias.shape])
 
+
 if __name__ == "__main__":
-   main()
+   main()  

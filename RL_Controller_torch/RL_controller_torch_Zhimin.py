@@ -1,7 +1,7 @@
 # import datetime as dt
 # import RPi.GPIO as GPIO
 # import datetime
-# import numpy as np
+# import numpy as np  
 import time
 from math import *
 import kqExoskeletonIO as kqio
