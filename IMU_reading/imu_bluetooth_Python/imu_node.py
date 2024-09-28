@@ -2,16 +2,16 @@ from ast import Try
 from time import sleep
 import numpy as np
 from numpy import array
-import gatt
+import gatt 
 import time
 
 from argparse import ArgumentParser
 from array import array
 import socket 
-import sys
+import sys 
 
 
-class AnyDevice(gatt.Device):
+class AnyDevice(gatt.Device):  
 
     sock_pc = None
     parse_imu_flage = False

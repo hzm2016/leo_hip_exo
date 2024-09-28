@@ -21,3 +21,6 @@ imu的mac地址可以用手机nrfconnect搜索到，或者用我们电脑端配�
   sudo apt-get install bluez
   sudo apt-get install libbluetooth-dev
   sudo pip install gatt
+
+
+First IMU MAC address :  

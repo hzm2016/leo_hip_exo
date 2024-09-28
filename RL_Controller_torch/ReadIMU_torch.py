@@ -1,6 +1,6 @@
 # import numpy as np
 import serial
-# import time
+# import time  
 
 class READIMU(object):
     def __init__(self, ComPort) -> None:
@@ -96,8 +96,4 @@ class READIMU(object):
             print("----------------------------------------") 
             print("----------------------------------------")
             self.Serial_IMU.reset_input_buffer()
-            self.Serial_IMU.reset_output_buffer()
-
-
-
-
+            self.Serial_IMU.reset_output_buffer()  
