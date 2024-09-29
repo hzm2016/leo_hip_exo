@@ -10,11 +10,14 @@ from array import array
 import socket 
 import sys 
 
+start = time.time()  
 
-class AnyDevice(gatt.Device):  
 
-    sock_pc = None
-    parse_imu_flage = False
+class AnyDevice(gatt.Device):   
+    def __init__(self, manager, mac_address): 
+        super(AnyDevice, self).__init__(manager=manager, mac_address=mac_address)
+        self.sock_pc = None
+        self.parse_imu_flage = False 
 
     def connect_succeeded(self):
         super().connect_succeeded()
@@ -24,7 +27,7 @@ class AnyDevice(gatt.Device):
         super().connect_failed(error)
         print("[%s] Connection failed: %s" % (self.mac_address, str(error)))
 
-    def disconnect_succeeded(self):
+    def disconnect_succeeded(self):  
         super().disconnect_succeeded()
         print("[%s] Disconnected" % (self.mac_address))
 
@@ -59,7 +62,7 @@ class AnyDevice(gatt.Device):
         params[2] = 255     #静止归零速度(单位cm/s) 0:不归零 255:立即归零
         params[3] = 0       #动态归零速度(单位cm/s) 0:不归零
         params[4] = ((barometerFilter&3)<<1) | (isCompassOn&1);   
-        params[5] = 60      #数据主动上报的传输帧率[取值0-250HZ], 0表示0.5HZ
+        params[5] = 200      #数据主动上报的传输帧率[取值0-250HZ], 0表示0.5HZ
         params[6] = 1       #陀螺仪滤波系数[取值0-2],数值越大越平稳但实时性越差
         params[7] = 3       #加速计滤波系数[取值0-4],数值越大越平稳但实时性越差
         params[8] = 5       #磁力计滤波系数[取值0-9],数值越大越平稳但实时性越差
@@ -68,7 +71,7 @@ class AnyDevice(gatt.Device):
         lzchar1.write_value(params)
 
         # 主动上报 0x19 
-        lzchar1.write_value(bytes([0x19]))
+        lzchar1.write_value(bytes([0x19])) 
         
         #lzchar1.write_value(bytes([0x51,0xAA,0xBB])) # 用总圈数代替欧拉角传输 并清零圈数 0x51
         #lzchar1.write_value(bytes([0x51,0x00,0x00])) # 输出欧拉角 0x51
@@ -110,8 +113,7 @@ class AnyDevice(gatt.Device):
                 print("send blue source data") 
                 self.sock_pc.sendall(value) 
                 
-    #这个是在本地解析
-    def parse_imu(self,buf):
+    def parse_imu(self, buf):  
         scaleAccel       = 0.00478515625      # 加速度 [-16g~+16g]    9.8*16/32768
         scaleQuat        = 0.000030517578125  # 四元数 [-1~+1]         1/32768
         scaleAngle       = 0.0054931640625    # 角度   [-180~+180]     180/32768
@@ -121,9 +123,9 @@ class AnyDevice(gatt.Device):
         scaleAirPressure = 0.0002384185791    # 气压 [-2000~+2000]    2000/8388608
         scaleHeight      = 0.0010728836       # 高度 [-9000~+9000]    9000/8388608
 
-        imu_dat = array('f',[0.0 for i in range(0,34)])
+        imu_dat = array('f',[0.0 for i in range(0,34)])  
 
-        if buf[0] == 0x11:
+        if buf[0] == 0x11: 
             ctl = (buf[2] << 8) | buf[1]  
             print(" subscribe tag: 0x%04x"%ctl)  
             print(" ms: ", ((buf[6]<<24) | (buf[5]<<16) | (buf[4]<<8) | (buf[3]<<0)))
@@ -167,55 +169,55 @@ class AnyDevice(gatt.Device):
                 imu_dat[7] = float(tmpY)
                 imu_dat[8] = float(tmpZ)
             
-            print(" ")
-            if ((ctl & 0x0008) != 0):
-                tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleMag; L += 2
-                print("\tCX: %.3f"%tmpX); # x磁场CX
-                tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleMag; L += 2
-                print("\tCY: %.3f"%tmpY); # y磁场CY
-                tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleMag; L += 2
-                print("\tCZ: %.3f"%tmpZ); # z磁场CZ
+            # print(" ")
+            # if ((ctl & 0x0008) != 0):
+            #     tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleMag; L += 2
+            #     print("\tCX: %.3f"%tmpX); # x磁场CX
+            #     tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleMag; L += 2
+            #     print("\tCY: %.3f"%tmpY); # y磁场CY
+            #     tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleMag; L += 2
+            #     print("\tCZ: %.3f"%tmpZ); # z磁场CZ
 
-                imu_dat[9] = float(tmpX)
-                imu_dat[10] = float(tmpY)
-                imu_dat[11] = float(tmpZ)
+            #     imu_dat[9] = float(tmpX)
+            #     imu_dat[10] = float(tmpY)
+            #     imu_dat[11] = float(tmpZ)  
             
-            print(" ")
-            if ((ctl & 0x0010) != 0):
-                tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleTemperature; L += 2
-                print("\ttemperature: %.2f"%tmpX) # 温度
+            # print(" ")
+            # if ((ctl & 0x0010) != 0):
+            #     tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleTemperature; L += 2
+            #     print("\ttemperature: %.2f"%tmpX) # 温度
 
-                tmpU32 = np.uint32(((np.uint32(buf[L+2]) << 16) | (np.uint32(buf[L+1]) << 8) | np.uint32(buf[L])))
-                if ((tmpU32 & 0x800000) == 0x800000): # 若24位数的最高位为1则该数值为负数，需转为32位负数，直接补上ff即可
-                    tmpU32 = (tmpU32 | 0xff000000)      
-                tmpY = np.int32(tmpU32) * scaleAirPressure; L += 3
-                print("\tairPressure: %.3f"%tmpY); # 气压
+            #     tmpU32 = np.uint32(((np.uint32(buf[L+2]) << 16) | (np.uint32(buf[L+1]) << 8) | np.uint32(buf[L])))
+            #     if ((tmpU32 & 0x800000) == 0x800000): # 若24位数的最高位为1则该数值为负数，需转为32位负数，直接补上ff即可
+            #         tmpU32 = (tmpU32 | 0xff000000)      
+            #     tmpY = np.int32(tmpU32) * scaleAirPressure; L += 3
+            #     print("\tairPressure: %.3f"%tmpY); # 气压
 
-                tmpU32 = np.uint32((np.uint32(buf[L+2]) << 16) | (np.uint32(buf[L+1]) << 8) | np.uint32(buf[L]))
-                if ((tmpU32 & 0x800000) == 0x800000): # 若24位数的最高位为1则该数值为负数，需转为32位负数，直接补上ff即可
-                    tmpU32 = (tmpU32 | 0xff000000)
-                tmpZ = np.int32(tmpU32) * scaleHeight; L += 3 
-                print("\theight: %.3f"%tmpZ); # 高度
+            #     tmpU32 = np.uint32((np.uint32(buf[L+2]) << 16) | (np.uint32(buf[L+1]) << 8) | np.uint32(buf[L]))
+            #     if ((tmpU32 & 0x800000) == 0x800000): # 若24位数的最高位为1则该数值为负数，需转为32位负数，直接补上ff即可
+            #         tmpU32 = (tmpU32 | 0xff000000)
+            #     tmpZ = np.int32(tmpU32) * scaleHeight; L += 3 
+            #     print("\theight: %.3f"%tmpZ); # 高度
 
-                imu_dat[12] = float(tmpX)
-                imu_dat[13] = float(tmpY)
-                imu_dat[14] = float(tmpZ)
+            #     imu_dat[12] = float(tmpX)
+            #     imu_dat[13] = float(tmpY)
+            #     imu_dat[14] = float(tmpZ)
 
-            print(" ")
-            if ((ctl & 0x0020) != 0):
-                tmpAbs = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleQuat; L += 2
-                print("\tw: %.3f"%tmpAbs); # w
-                tmpX =   np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleQuat; L += 2
-                print("\tx: %.3f"%tmpX); # x
-                tmpY =   np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleQuat; L += 2
-                print("\ty: %.3f"%tmpY); # y
-                tmpZ =   np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleQuat; L += 2
-                print("\tz: %.3f"%tmpZ); # z
+            # print(" ")
+            # if ((ctl & 0x0020) != 0):
+            #     tmpAbs = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleQuat; L += 2
+            #     print("\tw: %.3f"%tmpAbs); # w
+            #     tmpX =   np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleQuat; L += 2
+            #     print("\tx: %.3f"%tmpX); # x
+            #     tmpY =   np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleQuat; L += 2
+            #     print("\ty: %.3f"%tmpY); # y
+            #     tmpZ =   np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleQuat; L += 2
+            #     print("\tz: %.3f"%tmpZ); # z
 
-                imu_dat[15] = float(tmpAbs)
-                imu_dat[16] = float(tmpX)
-                imu_dat[17] = float(tmpY)
-                imu_dat[18] = float(tmpZ)
+            #     imu_dat[15] = float(tmpAbs)
+            #     imu_dat[16] = float(tmpX)
+            #     imu_dat[17] = float(tmpY)
+            #     imu_dat[18] = float(tmpZ)  
 
             print(" ")
             if ((ctl & 0x0040) != 0):
@@ -228,7 +230,10 @@ class AnyDevice(gatt.Device):
 
                 imu_dat[19] = float(tmpX)
                 imu_dat[20] = float(tmpY)
-                imu_dat[21] = float(tmpZ)
+                imu_dat[21] = float(tmpZ)  
+                
+                now = time.time() - start 
+                print("now :", now)  
 
             print(" ")
             if ((ctl & 0x0080) != 0):
@@ -243,60 +248,60 @@ class AnyDevice(gatt.Device):
                 imu_dat[23] = float(tmpY)
                 imu_dat[24] = float(tmpZ)
 
-            print(" ")
-            if ((ctl & 0x0100) != 0):
-                tmpU32 = ((buf[L+3]<<24) | (buf[L+2]<<16) | (buf[L+1]<<8) | (buf[L]<<0)); L += 4
-                print("\tsteps: %u"%tmpU32); # 计步数
-                tmpU8 = buf[L]; L += 1
-                if (tmpU8 & 0x01):# 是否在走路
-                    print("\t walking yes")
-                    imu_dat[25] = 100
-                else:
-                    print("\t walking no")
-                    imu_dat[25] = 0
-                if (tmpU8 & 0x02):# 是否在跑步
-                    print("\t running yes")
-                    imu_dat[26] = 100
-                else:
-                    print("\t running no")
-                    imu_dat[26] = 0
-                if (tmpU8 & 0x04):# 是否在骑车
-                    print("\t biking yes")
-                    imu_dat[27] = 100
-                else:
-                    print("\t biking no")
-                    imu_dat[27] = 0
-                if (tmpU8 & 0x08):# 是否在开车
-                    print("\t driving yes")
-                    imu_dat[28] = 100
-                else:
-                    print("\t driving no")
-                    imu_dat[28] = 0
+            # print(" ")
+            # if ((ctl & 0x0100) != 0):
+            #     tmpU32 = ((buf[L+3]<<24) | (buf[L+2]<<16) | (buf[L+1]<<8) | (buf[L]<<0)); L += 4
+            #     print("\tsteps: %u"%tmpU32); # 计步数
+            #     tmpU8 = buf[L]; L += 1
+            #     if (tmpU8 & 0x01):# 是否在走路
+            #         print("\t walking yes")
+            #         imu_dat[25] = 100
+            #     else:
+            #         print("\t walking no")
+            #         imu_dat[25] = 0
+            #     if (tmpU8 & 0x02):# 是否在跑步
+            #         print("\t running yes")
+            #         imu_dat[26] = 100
+            #     else:
+            #         print("\t running no")
+            #         imu_dat[26] = 0
+            #     if (tmpU8 & 0x04):# 是否在骑车
+            #         print("\t biking yes")
+            #         imu_dat[27] = 100
+            #     else:
+            #         print("\t biking no")
+            #         imu_dat[27] = 0
+            #     if (tmpU8 & 0x08):# 是否在开车
+            #         print("\t driving yes")
+            #         imu_dat[28] = 100
+            #     else:
+            #         print("\t driving no")
+            #         imu_dat[28] = 0
 
-            print(" ")
-            if ((ctl & 0x0200) != 0):
-                tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
-                print("\tasX: %.3f"%tmpX); # x加速度asX
-                tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
-                print("\tasY: %.3f"%tmpY); # y加速度asY
-                tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
-                print("\tasZ: %.3f"%tmpZ); # z加速度asZ
+            # print(" ")
+            # if ((ctl & 0x0200) != 0):
+            #     tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
+            #     print("\tasX: %.3f"%tmpX); # x加速度asX
+            #     tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
+            #     print("\tasY: %.3f"%tmpY); # y加速度asY
+            #     tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
+            #     print("\tasZ: %.3f"%tmpZ); # z加速度asZ
             
-                imu_dat[29] = float(tmpX)
-                imu_dat[30] = float(tmpY)
-                imu_dat[31] = float(tmpZ)
+            #     imu_dat[29] = float(tmpX)
+            #     imu_dat[30] = float(tmpY)
+            #     imu_dat[31] = float(tmpZ)
                 
-            print(" ")
-            if ((ctl & 0x0400) != 0):
-                tmpU16 = ((buf[L+1]<<8) | (buf[L]<<0)); L += 2
-                print("\tadc: %u"%tmpU16); # adc测量到的电压值，单位为mv
-                imu_dat[32] = float(tmpU16)
+            # print(" ")
+            # if ((ctl & 0x0400) != 0):
+            #     tmpU16 = ((buf[L+1]<<8) | (buf[L]<<0)); L += 2
+            #     print("\tadc: %u"%tmpU16); # adc测量到的电压值，单位为mv
+            #     imu_dat[32] = float(tmpU16)
 
-            print(" ")
-            if ((ctl & 0x0800) != 0):
-                tmpU8 = buf[L]; L += 1
-                print("\t GPIO1  M:%X, N:%X"%((tmpU8>>4)&0x0f, (tmpU8)&0x0f))
-                imu_dat[33] = float(tmpU8)
+            # print(" ")
+            # if ((ctl & 0x0800) != 0):
+            #     tmpU8 = buf[L]; L += 1
+            #     print("\t GPIO1  M:%X, N:%X"%((tmpU8>>4)&0x0f, (tmpU8)&0x0f))
+            #     imu_dat[33] = float(tmpU8)  
 
         else:
             print("[error] data head not define")
@@ -308,10 +313,8 @@ arg_parser.add_argument('host_ip', help="HOST ip address of device to connect", 
 args = arg_parser.parse_args()
 
 
-
-
 host = args.host_ip
-port = 6666
+port = 6666  
 sock = None
 print("host ip: ",host)
 if host is not None:
@@ -328,10 +331,10 @@ print("Connecting bluetooth ...")
 
 manager = gatt.DeviceManager(adapter_name='hci0')  
 device = AnyDevice(manager=manager, mac_address=args.mac_address)  
-device.sock_pc = sock  
+device.sock_pc = sock   
 if host is None:  
     device.parse_imu_flage = True  
 
-device.connect()
+device.connect()  
 
-manager.run()
+manager.run()   

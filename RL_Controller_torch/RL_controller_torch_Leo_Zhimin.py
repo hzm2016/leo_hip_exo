@@ -6,48 +6,27 @@
 import time
 from math import *
 import kqExoskeletonIO as kqio
-import ReadIMU_torch as ReadIMU
-from DNN_torch import DNN
+import RL_Controller_torch.ReadIMU as ReadIMU
+from DNN_torch import DNN  
+from utils import * 
 
 
 def SendCmdTorque(cmd1, cmd2):
     Ant.Cmd.Loop_L  = kqio.TOR_LOOP
     Ant.Cmd.Loop_R  = kqio.TOR_LOOP
     Ant.Cmd.Value_L = cmd1
-    Ant.Cmd.Value_R = cmd2
-    
-def rad2deg(rad):
-    deg = rad*180.0/pi
-    return deg
-
-def deg2rad(deg):
-    rad = deg*pi/180.0
-    return rad
-
-def saturate(Cmd,sat):
-    if Cmd>sat: 
-        Cmd=sat
-    if Cmd<-sat:
-        Cmd=-sat
-    return Cmd   
-
-def impedance_control(
-    Kp=0.0, 
-    Kd=0.0, 
-    ref_pos=0.0, ref_vel=0.0, 
-    real_pos=0.0, real_vel=0.0,  
-    tau_ff=0.0  
-):  
-    Cmd_tau = 0.0  
-    Cmd_tau = (ref_pos - real_pos) * Kp + (ref_vel - real_vel) * Kd + tau_ff  
-
-    return Cmd_tau  
+    Ant.Cmd.Value_R = cmd2  
 
 
 ctl_mode = 1         # 1 for with IMU 0 for without IMU   
 nn_mode = 1  
 kcontrol = 0.025     # 1.5 para running. 2 para climbing.  
-max_cmd = 2.0  
+max_cmd = 2.0        #  
+
+# reference position 
+pos_ampl = 30 
+pos_fre = 0.5   
+# reference position      
 
 #########################################
 # IMU settings  
@@ -92,28 +71,23 @@ with open(str(dateh)+str(datem)+str(dates)+".csv", "a") as log:
 
 
 print("Initializing the comunication with the Exoskeleton")
-GetSec = kqio.GetSec
-Ant = kqio.AntCH("/dev/ttyAMA0")                # This is the comport that connects the Raspberry Pi 4 to the LEO
+GetSec           = kqio.GetSec
+Ant              = kqio.AntCH("/dev/ttyAMA0")                # This is the comport that connects the Raspberry Pi 4 to the LEO
 Ant.Cmd.CmdMode  = kqio.CMD_SERVO_OVERRIDE
-StartSec         = GetSec()
-UpdateSec        = StartSec
-UpdateState      = Ant.ComState
-UpdateSuccessSec = StartSec
-AntConnected     = (Ant.ComState == 1)
+StartSec         = GetSec() 
+UpdateSec        = StartSec 
+UpdateState      = Ant.ComState 
+UpdateSuccessSec = StartSec  
+AntConnected     = (Ant.ComState == 1)   
 
 ComTotalCnt = 1
 ComErrorCnt = 0
-print("Succesful initialization")
+print("Succesful initialization")  
 
 input("Getting initial angular position values for encoders and press enter")  
 # The follwing sign definition follow the rigth hand side rule assuming that the rotation axis is pointing outside of the exoskeleton (for each motor)
 StartHipAngle_L = -rad2deg(Ant.Data.HipAngle_L)      
 StartHipAngle_R = rad2deg(Ant.Data.HipAngle_R)    
-
-# reference position 
-pos_ampl = 30 
-pos_fre = 0.5   
-# reference position    
 
 start = time.time()   
 
@@ -127,11 +101,11 @@ while(AntConnected):
 
         if ctl_mode == 0:  
             imu.read()  
-            imu.decode()   
+            imu.decode()    
         
         # sensing feedback  
-        L_tau = Ant.Data.HipTor_L
-        R_tau = Ant.Data.HipTor_R
+        L_tau = Ant.Data.HipTor_L    
+        R_tau = Ant.Data.HipTor_R     
         
         L_encoder     = -rad2deg(Ant.Data.HipAngle_L) - StartHipAngle_L
         R_encoder     = rad2deg(Ant.Data.HipAngle_R) - StartHipAngle_R
@@ -147,7 +121,7 @@ while(AntConnected):
             L_IMU_encoder = L_encoder 
             R_IMU_angle = R_encoder  
             L_IMU_vel = L_encoder_vel  
-            R_IMU_vel = R_encoder_vel    
+            R_IMU_vel = R_encoder_vel      
 
         if (now - t_pr3 > 3):   
             t_pr3 = now  
@@ -175,7 +149,7 @@ while(AntConnected):
             
             # send torque cmd  
             # SendCmdTorque(L_Cmd_sat, R_Cmd_sat)    
-            SendCmdTorque(0.0, 0.0)    
+            SendCmdTorque(0.0, 0.0)     
             
             print(f" Time: {UpdateSuccessSec:^8.3f}, L_IMU: {L_IMU_angle:^8.3f} | R_IMU: {R_IMU_angle:^8.3f} | L_CMD: {L_Cmd_sat:^8.3f} | R_CMD: {R_Cmd_sat:^8.3f} | Peak: {pk:^8.3f} ")
             

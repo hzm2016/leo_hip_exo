@@ -1,11 +1,7 @@
-# import datetime as dt
-# import RPi.GPIO as GPIO
-# import datetime
-# import numpy as np
 import time
-from math import *
+from math import * 
 import kqExoskeletonIO as kqio
-import ReadIMU_torch as ReadIMU
+import RL_Controller_torch.ReadIMU as ReadIMU
 from DNN_torch import DNN
 
 
@@ -68,7 +64,7 @@ with open(str(dateh)+str(datem)+str(dates)+".csv", "a") as log:
 
 print("Initializing the comunication with the Exoskeleton")
 GetSec = kqio.GetSec
-Ant = kqio.AntCH("/dev/ttyAMA0") # This is the comport that connects the Raspberry Pi 4 to the LEO
+Ant = kqio.AntCH("/dev/ttyAMA0")   # This is the comport that connects the Raspberry Pi 4 to the LEO
 Ant.Cmd.CmdMode  = kqio.CMD_SERVO_OVERRIDE
 StartSec         = GetSec()
 UpdateSec        = StartSec
@@ -128,8 +124,8 @@ while(AntConnected):
             if(L_Cmd>pk or R_Cmd>pk):
                 if(R_Cmd>L_Cmd):
                     pk=R_Cmd
-                if(L_Cmd>R_Cmd):
-                    pk=L_Cmd
+                if(L_Cmd>R_Cmd):  
+                    pk=L_Cmd  
             
             SendCmdTorque(L_Cmd_sat, R_Cmd_sat)
             
