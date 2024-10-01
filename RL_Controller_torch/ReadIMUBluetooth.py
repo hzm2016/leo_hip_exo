@@ -11,6 +11,15 @@ from array import array
 import socket 
 import sys   
 
+import threading   
+import csv   
+
+L_IMU_angle = 0 
+R_IMU_angle = 0 
+L_IMU_vel   = 0  
+R_IMU_vel   = 0  
+
+
 class AnyDevice(gatt.Device):   
     def __init__(self, manager, mac_address): 
         super(AnyDevice, self).__init__(manager=manager, mac_address=mac_address)
@@ -21,18 +30,18 @@ class AnyDevice(gatt.Device):
         super().connect_succeeded()
         print("[%s] Connected" % (self.mac_address))
 
-    def connect_failed(self, error):
-        super().connect_failed(error)
+    def connect_failed(self, error): 
+        super().connect_failed(error)  
         print("[%s] Connection failed: %s" % (self.mac_address, str(error)))
 
-    def disconnect_succeeded(self):  
-        super().disconnect_succeeded()
-        print("[%s] Disconnected" % (self.mac_address))
+    def disconnect_succeeded(self):   
+        super().disconnect_succeeded()  
+        print("[%s] Disconnected" % (self.mac_address))  
 
-    def services_resolved(self):
-        super().services_resolved()
+    def services_resolved(self):  
+        super().services_resolved()  
 
-        print("[%s] Resolved services" % (self.mac_address))
+        print("[%s] Resolved services" % (self.mac_address))  
         for service in self.services:
             print("[%s]\tService [%s]" % (self.mac_address, service.uuid))
             for characteristic in service.characteristics:
@@ -44,8 +53,8 @@ class AnyDevice(gatt.Device):
             if c.uuid == '0000ae01-0000-1000-8000-00805f9b34fb'.lower())
         lzchar1.write_value(')'.encode()) # 发送十六进制的0x29，让设备保持连接
         
-        # 尝试采用蓝牙高速通信特性 0x46
-        lzchar1.write_value(bytes([0x46]))
+        # 尝试采用蓝牙高速通信特性 0x46  
+        lzchar1.write_value(bytes([0x46]))   
 
         # GPIO 上拉
         #lzchar1.write_value(bytes([0x27,0x10]))
@@ -53,7 +62,7 @@ class AnyDevice(gatt.Device):
         # 参数设置
         isCompassOn = 0        #1=使用磁场融合姿态，0=不使用
         barometerFilter = 2
-        Cmd_ReportTag = 0x0FFF # 功能订阅标识
+        Cmd_ReportTag = 0x040 # 功能订阅标识
         params = bytearray([0x00 for i in range(0,11)])
         params[0] = 0x12
         params[1] = 5       #静止状态加速度阀值
@@ -69,14 +78,15 @@ class AnyDevice(gatt.Device):
         lzchar1.write_value(params)
 
         # 主动上报 0x19 
-        lzchar1.write_value(bytes([0x19])) 
+        lzchar1.write_value(bytes([0x19]))  
         
         #lzchar1.write_value(bytes([0x51,0xAA,0xBB])) # 用总圈数代替欧拉角传输 并清零圈数 0x51
         #lzchar1.write_value(bytes([0x51,0x00,0x00])) # 输出欧拉角 0x51
 
         lzchar2 = next(
             c for c in service.characteristics
-            if c.uuid == '0000ae02-0000-1000-8000-00805f9b34fb'.lower())
+            if c.uuid == '0000ae02-0000-1000-8000-00805f9b34fb'.lower())  
+        
         lzchar2.enable_notifications()
 
     def descriptor_read_value_failed(self, descriptor, error):
@@ -100,8 +110,7 @@ class AnyDevice(gatt.Device):
 
     def characteristic_value_updated(self, characteristic, value):
         print("Lzchar:", value.hex()) 
-        print("value.size",len(value))
-        #self.parse_imu(value)
+        print("value.size",len(value))  
         
         if characteristic.uuid == '0000ae02-0000-1000-8000-00805f9b34fb'.lower():
             if self.parse_imu_flage:
@@ -112,6 +121,8 @@ class AnyDevice(gatt.Device):
                 self.sock_pc.sendall(value) 
                 
     def parse_imu(self, buf):  
+        global L_IMU_angle, R_IMU_angle, L_IMU_vel, R_IMU_vel  
+        
         scaleAccel       = 0.00478515625      # 加速度 [-16g~+16g]    9.8*16/32768
         scaleQuat        = 0.000030517578125  # 四元数 [-1~+1]         1/32768
         scaleAngle       = 0.0054931640625    # 角度   [-180~+180]     180/32768
@@ -121,11 +132,11 @@ class AnyDevice(gatt.Device):
         scaleAirPressure = 0.0002384185791    # 气压 [-2000~+2000]    2000/8388608
         scaleHeight      = 0.0010728836       # 高度 [-9000~+9000]    9000/8388608
 
-        imu_dat = array('f',[0.0 for i in range(0,34)])  
+        imu_dat = array('f',[0.0 for i in range(0, 34)])    
 
-        if buf[0] == 0x11: 
-            ctl = (buf[2] << 8) | buf[1]  
-            print(" subscribe tag: 0x%04x"%ctl)  
+        if buf[0] == 0x11:  
+            ctl = (buf[2] << 8) | buf[1]   
+            print(" subscribe tag: 0x%04x"%ctl)   
             print(" ms: ", ((buf[6]<<24) | (buf[5]<<16) | (buf[4]<<8) | (buf[3]<<0)))
 
             L =7 # 从第7字节开始根据 订阅标识tag来解析剩下的数据
@@ -165,7 +176,10 @@ class AnyDevice(gatt.Device):
 
                 imu_dat[6] = float(tmpX)
                 imu_dat[7] = float(tmpY)
-                imu_dat[8] = float(tmpZ)
+                imu_dat[8] = float(tmpZ)    
+                
+                L_IMU_vel = tmpX   
+                R_IMU_vel = tmpX    
             
             # print(" ")
             # if ((ctl & 0x0008) != 0):
@@ -176,9 +190,9 @@ class AnyDevice(gatt.Device):
             #     tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleMag; L += 2
             #     print("\tCZ: %.3f"%tmpZ); # z磁场CZ
 
-            #     imu_dat[9] = float(tmpX)
-            #     imu_dat[10] = float(tmpY)
-            #     imu_dat[11] = float(tmpZ)  
+            #     imu_dat[9] = float(tmpX)  
+            #     imu_dat[10] = float(tmpY)  
+            #     imu_dat[11] = float(tmpZ)     
             
             # print(" ")
             # if ((ctl & 0x0010) != 0):
@@ -217,34 +231,34 @@ class AnyDevice(gatt.Device):
             #     imu_dat[17] = float(tmpY)
             #     imu_dat[18] = float(tmpZ)  
 
-            print(" ")
-            if ((ctl & 0x0040) != 0):
+            print(" ")  
+            if ((ctl & 0x0040) != 0):  
                 tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAngle; L += 2
                 print("\tangleX: %.3f"%tmpX); # x角度
                 tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAngle; L += 2
                 print("\tangleY: %.3f"%tmpY); # y角度
                 tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAngle; L += 2
-                print("\tangleZ: %.3f"%tmpZ); # z角度
+                print("\tangleZ: %.3f"%tmpZ); # z角度  
 
                 imu_dat[19] = float(tmpX)
                 imu_dat[20] = float(tmpY)
-                imu_dat[21] = float(tmpZ)  
+                imu_dat[21] = float(tmpZ)    
                 
-                now = time.time() - start 
-                print("now :", now)  
+                L_IMU_angle = tmpX  
+                R_IMU_angle = tmpX   
 
-            print(" ")
-            if ((ctl & 0x0080) != 0):
-                tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
-                print("\toffsetX: %.3f"%tmpX); # x坐标
-                tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
-                print("\toffsetY: %.3f"%tmpY); # y坐标
-                tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
-                print("\toffsetZ: %.3f"%tmpZ); # z坐标
+            # print(" ")
+            # if ((ctl & 0x0080) != 0):
+            #     tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
+            #     print("\toffsetX: %.3f"%tmpX); # x坐标
+            #     tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
+            #     print("\toffsetY: %.3f"%tmpY); # y坐标
+            #     tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
+            #     print("\toffsetZ: %.3f"%tmpZ); # z坐标
 
-                imu_dat[22] = float(tmpX)
-                imu_dat[23] = float(tmpY)
-                imu_dat[24] = float(tmpZ)
+            #     imu_dat[22] = float(tmpX)
+            #     imu_dat[23] = float(tmpY)   
+            #     imu_dat[24] = float(tmpZ)   
 
             # print(" ")
             # if ((ctl & 0x0100) != 0):
@@ -305,28 +319,14 @@ class AnyDevice(gatt.Device):
             print("[error] data head not define")
 
 
-
-### read bluetooth  
 class READIMU(object):
     def __init__(self, ComPort) -> None:
         self.ComPort = ComPort
-                
-        #IMU variables
-        self.AngleX_Left = 0
-        self.AngleX_Right = 0
-        self.AngleVelX_Left = 0
-        self.AngleVelX_Right = 0
-        self.Header1 = 0xc4
-        self.Header2 = 0xc4
-        self.XIMU=0
-        self.L_XIMU_int16=0
-        self.R_XIMU_int16=0
-        self.L_XVIMU_int16=0
-        self.R_XVIMU_int16=0
-        self.XIMUL=0
-        self.XIMUR=0
-        self.XVIMUL=0
-        self.XVIMUR=0
+        
+        self.AngleX_Left = 0  
+        self.AngleX_Right = 0  
+        self.AngleVelX_Left = 0  
+        self.AngleVelX_Right = 0     
         
         #Serial Variables --------
         self.buffer = 0x00    
@@ -369,7 +369,7 @@ class READIMU(object):
         toFloat= x_int * span / float((((1 << nbits) - 1))) + offset_value
         return toFloat  
 
-    def decode(self):
+    def decode(self):  
         #if len(self.buffer)==7 and self.buffer[0]==0x3a and self.buffer[1]==0xc4 :
         if len(self.buffer)==11 and self.buffer[0]==0x31 and self.buffer[1]==0x32  and self.buffer[10]==0x33:
             self.L_XIMU_int16=(self.buffer[2] << 8) | (self.buffer[3])
@@ -401,4 +401,80 @@ class READIMU(object):
             print("----------------------------------------") 
             print("----------------------------------------")
             self.Serial_IMU.reset_input_buffer()
-            self.Serial_IMU.reset_output_buffer()  
+            self.Serial_IMU.reset_output_buffer()   
+            
+
+def read_data():     
+    global L_IMU_angle, R_IMU_angle, L_IMU_vel, R_IMU_vel  
+    
+    host = args.host_ip
+    port = 6666  
+    sock = None       
+    if host is not None:   
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((host, port))
+        except:
+            print("Could not make a connection to the server")
+            input("Press enter to quit")
+            sys.exit(0)  
+
+    print("Connecting bluetooth ...")   
+    manager = gatt.DeviceManager(adapter_name='hci0')    
+    device = AnyDevice(manager=manager, mac_address="E9:65:F2:E3:6E:58")      
+    device.sock_pc = sock   
+    if host is None:  
+        device.parse_imu_flage = True  
+
+    device.connect()    
+    manager.run()    
+
+
+def save_data():   
+    global L_IMU_angle, R_IMU_angle, L_IMU_vel, R_IMU_vel 
+    start = time.time() 
+    csv_filename = "bluetooth_data_reading.csv"    
+    with open(csv_filename, 'a', newline='') as csvfile:
+        fieldnames = ['L_IMU_Ang', 'R_IMU_Ang', 'L_IMU_Vel', 'R_IMU_Vel', 'L_Cmd', 'R_Cmd', 'Peak', 'Time']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)   
+        
+        # Write the header only if the file is empty
+        csvfile.seek(0, 2)   
+        if csvfile.tell() == 0:    
+            writer.writeheader()    
+            
+        while True:  
+            now = (time.time() - start)   
+            
+            L_Cmd = 0 
+            R_Cmd = 0  
+            
+            data = {
+                'L_IMU_Ang': L_IMU_angle,
+                'R_IMU_Ang': R_IMU_angle,
+                'L_IMU_Vel': L_IMU_vel,
+                'R_IMU_Vel': R_IMU_vel,
+                'L_Cmd': L_Cmd,  
+                'R_Cmd': R_Cmd,    
+                'Peak': 0.0,
+                'Time': now
+            }   
+
+            writer.writerow(data)   
+            csvfile.flush()         
+
+
+if __name__ == "__main__":  
+    arg_parser = ArgumentParser(description="GATT Connect Demo")
+    arg_parser.add_argument('mac_address', help="MAC address of device to connect")
+    arg_parser.add_argument('host_ip', help="HOST ip address of device to connect", nargs='?', default=None)
+    args = arg_parser.parse_args()
+
+    thread_reading = threading.Thread(target=read_data)    
+    thread_save    = threading.Thread(target=save_data)     
+     
+    thread_reading.start()  
+    thread_save.start()  
+    
+    thread_reading.join()  
+    thread_save.join()  

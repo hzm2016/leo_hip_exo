@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Apr 19 15:47:33 2021
+import serial   
+import struct   
+import time   
 
-@author: lzr
-"""
-import serial
-import struct
-import time
-
-CMD_HEAD = 0xabcd
-CMD_LENGTH = 28  
-DATA_HEAD = [0xba, 0xdc]
-DATA_LENGTH = 68
+CMD_HEAD = 0xabcd   
+CMD_LENGTH = 28   
+DATA_HEAD = [0xba, 0xdc]   
+DATA_LENGTH = 68  
 
 CMD_OBS_ONLY = 0  # 只观测数据
 CMD_INNER_DUAL_LEG_MODE = 11  # 内部算法，可对Force、Speed调参
@@ -40,7 +35,7 @@ def GetMs():
 
 
 def GetUs():
-    return int(time.perf_counter_ns() / 1e3)
+    return int(time.perf_counter_ns() / 1e3)   
 
 
 class CmdStruct(object):
@@ -54,7 +49,7 @@ class CmdStruct(object):
         self.Loop_L = 0  # CMD_SERVO_OVERRIDE模式生效，支持TOR_LOOP、SPEED_LOOP、PLACE_LOOP三种环
         self.Loop_R = 0
         self.Value_L = 0
-        self.Value_R = 0
+        self.Value_R = 0   
 
 
 class DataStruct(object):
@@ -213,7 +208,7 @@ class AntCH(object):
             Data = struct.pack('<H3d', CMD_HEAD, 0, 0, 0)
 
         # print('Send: ', str(Head).encode('utf-8'))
-        return Data + self.__U16XorCheck(Data)
+        return Data + self.__U16XorCheck(Data)  
 
     def __UnPackData(self, Data):
         UnpackState = 0
@@ -307,4 +302,4 @@ class AntCH(object):
             self.__CloseSerial()
 
         finally:
-            return UpdateState
+            return UpdateState  

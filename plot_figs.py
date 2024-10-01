@@ -2,12 +2,15 @@ import csv
 import matplotlib.pyplot as plt
 from math import *
 
-def deg2rad(deg):
-    rad = deg*pi/180.0
-    return rad
 
 # Load CSV data manually
-file_path = '122155.csv'  # Replace with your actual CSV file path
+# file_path = 'RL_Controller_torch/20240929-130752.csv'  # Replace with your actual CSV file path
+# file_path = 'IMU_reading/imu_Serial_Python/imu_data.csv' 
+# file_path = 'RL_Controller_torch/imu_data.csv' 
+# file_path = 'RL_Controller_torch/171728.csv'   
+
+file_path = 'RL_Controller_torch/serial_data_reading.csv'    
+# file_path = 'RL_Controller_torch/bluetooth_data_reading.csv'    
 
 # Initialize lists for each column
 time = []
@@ -34,19 +37,34 @@ with open(file_path, 'r') as csvfile:
     
     # Extract data row by row
     for row in csvreader:
-        time.append(float(row[0]))  # 'now' is the time
-        L_cmd.append(float(row[1]))
-        R_cmd.append(float(row[2]))
-        L_torque.append(float(row[3]))
-        R_torque.append(float(row[4]))
-        L_IMU_angle.append(float(row[5]))
-        R_IMU_angle.append(float(row[6]))
-        L_IMU_vel.append(float(row[7]))
-        R_IMU_vel.append(float(row[8]))
-        L_encoder.append(float(row[9]))
-        R_encoder.append(float(row[10]))
-        L_encoder_vel.append(float(row[11]))
-        R_encoder_vel.append(float(row[12]))
+        # time.append(float(row[0]))  # 'now' is the time
+        # L_cmd.append(float(row[1]))
+        # R_cmd.append(float(row[2]))
+        # L_torque.append(float(row[3]))
+        # R_torque.append(float(row[4]))
+        # L_IMU_angle.append(float(row[5]))
+        # R_IMU_angle.append(float(row[6]))
+        # L_IMU_vel.append(float(row[7]))
+        # R_IMU_vel.append(float(row[8]))
+        # L_encoder.append(float(row[9]))
+        # R_encoder.append(float(row[10]))
+        # L_encoder_vel.append(float(row[11]))
+        # R_encoder_vel.append(float(row[12]))   
+        
+        time.append(float(row[7]))  # 'now' is the time
+        L_cmd.append(float(row[4]))
+        R_cmd.append(float(row[5]))
+        L_torque.append(float(row[4]))
+        R_torque.append(float(row[5])) 
+        L_IMU_angle.append(float(row[0]))
+        R_IMU_angle.append(float(row[1]))
+        L_IMU_vel.append(float(row[2]))
+        R_IMU_vel.append(float(row[3]))  
+        
+        L_encoder.append(float(row[0]))
+        R_encoder.append(float(row[1]))
+        L_encoder_vel.append(float(row[2]))
+        R_encoder_vel.append(float(row[3]))  
         
         #R_est_torque.append(0.35*6.4*9.81*sin(deg2rad(float(row[12]))))
 
@@ -64,7 +82,7 @@ axs[0, 0].legend()
 axs[0, 1].plot(time, R_cmd, label='R Cmd', color='red')
 axs[0, 1].plot(time, R_torque, label='R Torque', color='blue')
 axs[0, 1].set_title('Right')
-axs[0, 1].legend()
+axs[0, 1].legend()  
 
 axs[1, 0].plot(time, L_IMU_angle, label='L IMU Angle', color='red')
 axs[1, 0].plot(time, R_IMU_angle, label='R IMU Angle', color='blue')
@@ -92,7 +110,9 @@ for ax in axs.flat:
     ax.grid(True)
 
 # Adjust layout for better spacing
-plt.tight_layout()
+plt.tight_layout()  
 
-# Display the plot
+# plt.savefig('test_per_bluetooth.png')   
+plt.savefig('test_per_serial.png')   
+
 plt.show()

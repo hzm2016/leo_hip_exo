@@ -36,3 +36,7 @@ source path_of_the_venv/name_of_the_venv/bin/activate
 [^Note1]: This configuration is to run with Inertial Measurement Units (IMUs) feedback. Hence, the BIRO Lab Control Box is needed. 
 [^1]: The 64 bits version is needed to use PyTorch
 [^2]: Make sure that the versions are compatible | Python 3.12.4 | PySerial 3.5 | PyTorch 2.1.1 | Numpy 1.26.0 |
+
+
+Left: E9:65:F2:E3:6E:58  
+Right: 3B:04:94:38:88:F6  

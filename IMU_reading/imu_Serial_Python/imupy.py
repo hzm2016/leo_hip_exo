@@ -4,9 +4,7 @@ import numpy as np
 from array import array
 import csv  
 
-# 设置正确的串口参数------------------------
-
-ser_port = "/dev/ttyUSB0"      #此处需要替换为对应使用的串口号，windows系统写成COMx，若是linux则要根据所用系统进行调整如写成/dev/ttyUSBx或/dev/ttySx
+ser_port = "/dev/ttyUSB2"      #此处需要替换为对应使用的串口号，windows系统写成COMx，若是linux则要根据所用系统进行调整如写成/dev/ttyUSBx或/dev/ttySx
 
 # ser_port = "/dev/serial0" 
 ser_baudrate = 115200  # 串口波特率
@@ -47,24 +45,24 @@ def Cmd_RxUnpack(buf, DLen):
         print("\n subscribe tag: 0x%04x"%ctl)
         print(" ms: ", ((buf[6]<<24) | (buf[5]<<16) | (buf[4]<<8) | (buf[3]<<0)))
 
-        L =7 # 从第7字节开始根据 订阅标识tag来解析剩下的数据
+        L = 7 # 从第7字节开始根据 订阅标识tag来解析剩下的数据
         #############################################
         
-        # if ((ctl & 0x0001) != 0):
-        #     tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2 
-        #     print("\taX: %.3f"%tmpX); # x加速度aX
-        #     tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2 
-        #     print("\taY: %.3f"%tmpY); # y加速度aY
-        #     tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
-        #     print("\taZ: %.3f"%tmpZ); # z加速度aZ  
+        if ((ctl & 0x0001) != 0):
+            tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2 
+            print("\taX: %.3f"%tmpX); # x加速度aX
+            tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2 
+            print("\taY: %.3f"%tmpY); # y加速度aY
+            tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
+            print("\taZ: %.3f"%tmpZ); # z加速度aZ  
                   
-        # if ((ctl & 0x0002) != 0):
-        #     tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
-        #     print("\tAX: %.3f"%tmpX) # x加速度AX
-        #     tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
-        #     print("\tAY: %.3f"%tmpY) # y加速度AY
-        #     tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
-        #     print("\tAZ: %.3f"%tmpZ) # z加速度AZ  
+        if ((ctl & 0x0002) != 0):
+            tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
+            print("\tAX: %.3f"%tmpX) # x加速度AX
+            tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
+            print("\tAY: %.3f"%tmpY) # y加速度AY
+            tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAccel; L += 2
+            print("\tAZ: %.3f"%tmpZ) # z加速度AZ  
 
         if ((ctl & 0x0004) != 0):
             tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) * scaleAngleSpeed; L += 2 
@@ -259,13 +257,13 @@ def read_data():
     # Create filename with format {Year}{Month}{Day}-{Hour}{Minute}{Second}.csv
     csv_filename = "imu_data.csv"
     with open(csv_filename, 'a', newline='') as csvfile:  
-        fieldnames = ['L_IMU_Ang', 'R_IMU_Ang', 'L_IMU_Vel', 'R_IMU_Vel', 'Time']
+        fieldnames = ['L_IMU_Ang', 'R_IMU_Ang', 'L_IMU_Vel', 'R_IMU_Vel', 'L_Cmd', 'R_Cmd', 'Peak', 'Time']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)  
 
         # # Write the header only if the file is empty
-        # csvfile.seek(0, 2)
-        # if csvfile.tell() == 0:
-        writer.writeheader()
+        csvfile.seek(0, 2)
+        if csvfile.tell() == 0:
+            writer.writeheader()  
             
         # 1.发送配置参数
         params = [0] * 11       # 数组
@@ -312,6 +310,9 @@ def read_data():
                     'R_IMU_Ang': angle_y,
                     'L_IMU_Vel': vel_x, 
                     'R_IMU_Vel': vel_y,  
+                    'L_Cmd': 0.0, 
+                    'R_Cmd': 0.0, 
+                    'Peak': 0.0,              
                     'Time': now  
                 }
                 

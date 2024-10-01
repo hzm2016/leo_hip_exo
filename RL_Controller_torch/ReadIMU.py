@@ -1,15 +1,16 @@
-# import numpy as np
-import serial
-# import time  
+import numpy as np  
+import serial       
+import time         
+
 
 class READIMU(object):
     def __init__(self, ComPort) -> None:
-        #IMU variables
-        self.ComPort = ComPort
-        self.AngleX_Left = 0
-        self.AngleX_Right = 0
-        self.AngleVelX_Left = 0
-        self.AngleVelX_Right = 0
+        #IMU variables     
+        self.ComPort = ComPort  
+        self.AngleX_Left = 0      
+        self.AngleX_Right = 0       
+        self.AngleVelX_Left = 0       
+        self.AngleVelX_Right = 0        
         self.Header1 = 0xc4
         self.Header2 = 0xc4
         
@@ -24,7 +25,7 @@ class READIMU(object):
         self.XVIMUR=0
         
         #Serial Variables --------
-        self.buffer = 0x00
+        self.buffer = 0x00  
         self.buffer_len = 0x00  
         #Serial Begin -------------
         # self.Serial_IMU = serial.Serial(ComPort, 230400, timeout=0.02, parity=serial.PARITY_NONE)

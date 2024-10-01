@@ -12,12 +12,28 @@ import sys
 
 start = time.time()  
 
+angle_x = 0.0    
+angle_y = 0.0     
+
+vel_x = 0.0    
+vel_y = 0.0    
+
 
 class AnyDevice(gatt.Device):   
     def __init__(self, manager, mac_address): 
         super(AnyDevice, self).__init__(manager=manager, mac_address=mac_address)
         self.sock_pc = None
         self.parse_imu_flage = False 
+        
+        # csv_filename = "imu_data.csv"
+        # with open(csv_filename, 'a', newline='') as csvfile:  
+        #     fieldnames = ['L_IMU_Ang', 'R_IMU_Ang', 'L_IMU_Vel', 'R_IMU_Vel', 'Time']
+        #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)  
+
+        #     # # Write the header only if the file is empty
+        #     # csvfile.seek(0, 2)
+        #     # if csvfile.tell() == 0:
+        #     writer.writeheader()
 
     def connect_succeeded(self):
         super().connect_succeeded()
@@ -111,7 +127,7 @@ class AnyDevice(gatt.Device):
 
             if self.sock_pc is not None:
                 print("send blue source data") 
-                self.sock_pc.sendall(value) 
+                self.sock_pc.sendall(value)  
                 
     def parse_imu(self, buf):  
         scaleAccel       = 0.00478515625      # 加速度 [-16g~+16g]    9.8*16/32768
@@ -122,7 +138,9 @@ class AnyDevice(gatt.Device):
         scaleTemperature = 0.01               # 温度
         scaleAirPressure = 0.0002384185791    # 气压 [-2000~+2000]    2000/8388608
         scaleHeight      = 0.0010728836       # 高度 [-9000~+9000]    9000/8388608
-
+        
+        global angle_x, angle_y, vel_x, vel_y  
+        
         imu_dat = array('f',[0.0 for i in range(0,34)])  
 
         if buf[0] == 0x11: 
@@ -168,6 +186,9 @@ class AnyDevice(gatt.Device):
                 imu_dat[6] = float(tmpX)
                 imu_dat[7] = float(tmpY)
                 imu_dat[8] = float(tmpZ)
+                
+                vel_x = tmpX 
+                vel_y = tmpY  
             
             # print(" ")
             # if ((ctl & 0x0008) != 0):
@@ -234,19 +255,22 @@ class AnyDevice(gatt.Device):
                 
                 now = time.time() - start 
                 print("now :", now)  
+                
+                angle_x = tmpX  
+                angle_y = tmpY  
 
-            print(" ")
-            if ((ctl & 0x0080) != 0):
-                tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
-                print("\toffsetX: %.3f"%tmpX); # x坐标
-                tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
-                print("\toffsetY: %.3f"%tmpY); # y坐标
-                tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
-                print("\toffsetZ: %.3f"%tmpZ); # z坐标
+            # print(" ")
+            # if ((ctl & 0x0080) != 0):
+            #     tmpX = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
+            #     print("\toffsetX: %.3f"%tmpX); # x坐标
+            #     tmpY = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
+            #     print("\toffsetY: %.3f"%tmpY); # y坐标
+            #     tmpZ = np.short((np.short(buf[L+1])<<8) | buf[L]) / 1000.0; L += 2
+            #     print("\toffsetZ: %.3f"%tmpZ); # z坐标
 
-                imu_dat[22] = float(tmpX)
-                imu_dat[23] = float(tmpY)
-                imu_dat[24] = float(tmpZ)
+            #     imu_dat[22] = float(tmpX)
+            #     imu_dat[23] = float(tmpY)
+            #     imu_dat[24] = float(tmpZ)  
 
             # print(" ")
             # if ((ctl & 0x0100) != 0):
@@ -304,8 +328,9 @@ class AnyDevice(gatt.Device):
             #     imu_dat[33] = float(tmpU8)  
 
         else:
-            print("[error] data head not define")
-
+            print("[error] data head not define")  
+        
+        
 
 arg_parser = ArgumentParser(description="GATT Connect Demo")
 arg_parser.add_argument('mac_address', help="MAC address of device to connect")
@@ -315,7 +340,7 @@ args = arg_parser.parse_args()
 
 host = args.host_ip
 port = 6666  
-sock = None
+sock = None  
 print("host ip: ",host)
 if host is not None:
     try:
@@ -335,6 +360,5 @@ device.sock_pc = sock
 if host is None:  
     device.parse_imu_flage = True  
 
-device.connect()  
-
-manager.run()   
+device.connect()   
+manager.run()    

@@ -1,11 +1,12 @@
 import numpy as np  
-import time
+import time 
 from math import *   
 
-L_Ctl = -1  
+L_Ctl = -1   
 R_Ctl = 1   
-Cmd_scale = 20.0  
-kcontrol = 1  # command: 1.5 for running, 2 for climbing  
+Cmd_scale = 20.0          
+kcontrol = 1              # command: 1.5 for running, 2 for climbing  
+
 
 def rad2deg(rad):
     deg = rad*180.0/pi
@@ -32,4 +33,8 @@ def impedance_control(
     Cmd_tau = 0.0  
     Cmd_tau = (ref_pos - real_pos) * Kp + (ref_vel - real_vel) * Kd + tau_ff  
 
-    return Cmd_tau     
+    return Cmd_tau      
+
+def smooth(old_value=None, value=None):  
+    smoothed_value = 0.7 * old_value + 0.3 * value   
+    return smoothed_value   

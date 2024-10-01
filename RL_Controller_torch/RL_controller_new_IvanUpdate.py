@@ -116,7 +116,7 @@ while(AntConnected):
 
             kcontrol = 0.025   # 1.5 para running. 2 para climbing.
             
-            L_Cmd     = dnn.hip_torque_L*kcontrol
+            L_Cmd     = dnn.hip_torque_L*kcontrol 
             R_Cmd     = dnn.hip_torque_R*kcontrol
             L_Cmd_sat = saturate(L_Cmd, 2) 
             R_Cmd_sat = saturate(R_Cmd, 2)  
@@ -158,4 +158,4 @@ while(AntConnected):
             break
 
     UpdateState = Ant.Update()  
-    ComTotalCnt += 1
+    ComTotalCnt += 1   
