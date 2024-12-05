@@ -251,7 +251,7 @@ def Cmd_PackAndTx(pDat, DLen):
     ser.write(buf)
     return 0
 
-def read_data():
+def read_data(): 
     print("------------demo start--------------")  
     
     # Create filename with format {Year}{Month}{Day}-{Hour}{Minute}{Second}.csv
